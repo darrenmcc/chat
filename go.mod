@@ -3,6 +3,7 @@ module github.com/tinode/chat
 go 1.18
 
 require (
+	cloud.google.com/go/firestore v1.9.0
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/aws/aws-sdk-go v1.44.204
 	github.com/go-sql-driver/mysql v1.7.0
@@ -32,7 +33,6 @@ require (
 	cloud.google.com/go v0.110.0 // indirect
 	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/firestore v1.9.0 // indirect
 	cloud.google.com/go/iam v0.12.0 // indirect
 	cloud.google.com/go/longrunning v0.4.1 // indirect
 	cloud.google.com/go/storage v1.29.0 // indirect
