@@ -10,12 +10,28 @@ import (
 	t "github.com/tinode/chat/server/store/types"
 )
 
+const (
+	UserCollection            = "ChatUsers"
+	TagCollection             = "ChatTags"
+	DeviceCollection          = "ChatDevices"
+	AuthCollection            = "ChatAuth"
+	TopicCollection           = "ChatTopic"
+	TopicTagCollection        = "ChatTopicTags"
+	SubscriptionCollection    = "ChatSubscriptions"
+	MessageCollection         = "ChatMessages"
+	DellogCollection          = "ChatDellog"
+	CredentialCollection      = "ChatCredentials"
+	FileUploadCollection      = "ChatFileUploads"
+	FileMessageLinkCollection = "ChatFileMessageLinks"
+)
+
+var ctx = context.Background()
+
 type firestoreDB struct {
 	fs *firestore.Client
 }
 
 func (fs *firestoreDB) Open(config json.RawMessage) (err error) {
-	ctx := context.Background()
 	fs.fs, err = firestore.NewClient(ctx, "darren-prd")
 	if err != nil {
 		return err
@@ -23,45 +39,56 @@ func (fs *firestoreDB) Open(config json.RawMessage) (err error) {
 	return nil
 }
 
-func (fs *firestoreDB) Close() error { return nil }
-func (fs *firestoreDB) IsOpen() bool { return true }
-
-func (fs *firestoreDB) GetDbVersion() (int, error) { return 0, nil }
-
-func (fs *firestoreDB) CheckDbVersion() error { return nil }
-
-func (fs *firestoreDB) GetName() string {
-
-}
-
+func (fs *firestoreDB) Close() error                { return nil }
+func (fs *firestoreDB) IsOpen() bool                { return true }
+func (fs *firestoreDB) GetDbVersion() (int, error)  { return 0, nil }
+func (fs *firestoreDB) CheckDbVersion() error       { return nil }
+func (fs *firestoreDB) GetName() string             { return "" }
 func (fs *firestoreDB) SetMaxResults(val int) error { return nil }
-
-func (fs *firestoreDB) CreateDb(reset bool) error { return nil }
-
-func (fs *firestoreDB) UpgradeDb() error { return nil }
-
-func (fs *firestoreDB) Version() int { return 0 }
-
-func (fs *firestoreDB) Stats() interface{} { return nil }
+func (fs *firestoreDB) CreateDb(reset bool) error   { return nil }
+func (fs *firestoreDB) UpgradeDb() error            { return nil }
+func (fs *firestoreDB) Version() int                { return 0 }
+func (fs *firestoreDB) Stats() interface{}          { return nil }
 
 func (fs *firestoreDB) UserCreate(user *t.User) error {
-
+	_, err := fs.fs.Collection(UserCollection).Doc(user.Id).Set(ctx, user)
+	return err
 }
 
 func (fs *firestoreDB) UserGet(uid t.Uid) (*t.User, error) {
-
+	snap, err := fs.fs.Collection(UserCollection).Doc(uid.String()).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var user t.User
+	err = snap.DataTo(&user)
+	return &user, err
 }
 
 func (fs *firestoreDB) UserGetAll(ids ...t.Uid) ([]t.User, error) {
-
+	snaps, err := fs.fs.Collection(UserCollection).Query.Documents(ctx).GetAll()
+	if err != nil {
+		return nil, err
+	}
+	var users []t.User
+	for _, snap := range snaps {
+		var user t.User
+		err = snap.DataTo(&user)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 func (fs *firestoreDB) UserDelete(uid t.Uid, hard bool) error {
-
+	_, err := fs.fs.Collection(UserCollection).Doc(uid.String()).Delete(ctx)
+	return err
 }
 
 func (fs *firestoreDB) UserUpdate(uid t.Uid, update map[string]interface{}) error {
-
+	return nil // todo
 }
 
 func (fs *firestoreDB) UserUpdateTags(uid t.Uid, add, remove, reset []string) ([]string, error) {
@@ -69,7 +96,19 @@ func (fs *firestoreDB) UserUpdateTags(uid t.Uid, add, remove, reset []string) ([
 }
 
 func (fs *firestoreDB) UserGetByCred(method, value string) (t.Uid, error) {
-
+	snaps, err := fs.fs.Collection(UserCollection).Query.Where("synthetic", "=", method+":"+value).Documents(ctx).GetAll()
+	if err != nil {
+		return t.ZeroUid, err
+	}
+	for _, snap := range snaps {
+		var user t.User
+		err = snap.DataTo(&user)
+		if err != nil {
+			return t.ZeroUid, err
+		}
+		return user.Uid(), nil
+	}
+	return t.ZeroUid, nil
 }
 
 func (fs *firestoreDB) UserUnreadCount(ids ...t.Uid) (map[t.Uid]int, error) {
@@ -129,7 +168,8 @@ func (fs *firestoreDB) AuthUpdRecord(user t.Uid, scheme, unique string, authLvl 
 }
 
 func (fs *firestoreDB) TopicCreate(topic *t.Topic) error {
-
+	_, err := fs.fs.Collection(UserCollection).Doc(topic.Id).Set(ctx, topic)
+	return err
 }
 
 func (fs *firestoreDB) TopicCreateP2P(initiator, invited *t.Subscription) error {
